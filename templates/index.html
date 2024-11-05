@@ -1,25 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Audio Steganography & Encryption</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+    <title>Audio Steganography</title>
 </head>
 <body>
-    <h1>Audio Steganography & Encryption</h1>
-    <form id="steg-form" enctype="multipart/form-data" method="POST">
-        <label>Upload Audio File:</label>
-        <input type="file" name="audio_file" required><br>
-        
-        <label>Upload Secret File:</label>
-        <input type="file" name="secret_file" required><br>
-        
-        <label>Encryption Key (32 characters):</label>
-        <input type="password" name="key" required><br>
-        
-        <button type="submit" formaction="/hide">Hide Data</button>
-        <button type="submit" formaction="/encrypt">Encrypt File</button>
-    </form>
+    <h1>Audio Steganography</h1>
     <div id="response"></div>
-    <script src="/static/app.js"></script>
+    <form id="steg-form">
+        <label for="audio_file">Audio File:</label>
+        <input type="file" id="audio_file" name="audio_file" accept="audio/*" required>
+
+        <label for="secret_file">Secret File:</label>
+        <input type="file" id="secret_file" name="secret_file" accept="*/*" required>
+
+        <label for="key">Encryption Key:</label>
+        <input type="password" id="key" name="key" required>
+
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" required>
+
+        <button type="submit" formaction="/hide">Hide Data</button>
+    </form>
+
+    <button id="download-stego" style="display:none;">Download Stego File</button>
+    <button id="extract-data" style="display:none;">Extract Data</button>
+    <div id="extracted-data" style="display:none;"></div>
 </body>
 </html>
