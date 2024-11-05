@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Audio Steganography & Encryption</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Audio Steganography & Encryption</h1>
+    <form id="steg-form" enctype="multipart/form-data" method="POST">
+        <label>Upload Audio File:</label>
+        <input type="file" name="audio_file" required><br>
+        
+        <label>Upload Secret File:</label>
+        <input type="file" name="secret_file" required><br>
+        
+        <label>Encryption Key (32 characters):</label>
+        <input type="password" name="key" required><br>
+        
+        <button type="submit" formaction="/hide">Hide Data</button>
+        <button type="submit" formaction="/encrypt">Encrypt File</button>
+    </form>
+    <div id="response"></div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
