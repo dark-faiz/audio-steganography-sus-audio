@@ -3,31 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
-    <title>Audio Steganography</title>
+    <title>Cryptography Tool</title>
+    <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
-    <h1>Audio Steganography</h1>
+    <h1>Cryptography Tool</h1>
+
+    <!-- Hide Data Section -->
+    <section>
+        <h2>Hide Data</h2>
+        <form id="hide-form" enctype="multipart/form-data">
+            <label for="audio-file">Choose audio file:</label>
+            <input type="file" id="audio-file" name="audio_file" required>
+
+            <label for="secret-file">Choose secret file to hide:</label>
+            <input type="file" id="secret-file" name="secret_file" required>
+
+            <button type="submit">Hide Data</button>
+        </form>
+    </section>
+
+    <!-- Encrypt Section -->
+    <section>
+        <h2>Encrypt Stego Audio</h2>
+        <form id="encrypt-form">
+            <label for="stego-audio-path">Stego Audio Path:</label>
+            <input type="text" id="stego-audio-path" name="stego_audio_path" placeholder="Enter path of stego audio" required>
+
+            <label for="encryption-key">Encryption Key:</label>
+            <input type="password" id="encryption-key" name="key" placeholder="Enter your 32-character encryption key" required>
+
+            <button type="submit">Encrypt</button>
+        </form>
+    </section>
+
+    <!-- Decrypt Section -->
+    <section>
+        <h2>Decrypt Encrypted Audio</h2>
+        <form id="decrypt-form" enctype="multipart/form-data">
+            <label for="encrypted-file">Choose encrypted file:</label>
+            <input type="file" id="encrypted-file" name="encrypted_file" required>
+
+            <label for="decryption-key">Decryption Key:</label>
+            <input type="password" id="decryption-key" name="key" placeholder="Enter your decryption key" required>
+
+            <button type="submit">Decrypt</button>
+        </form>
+    </section>
+
+    <!-- Response Message -->
     <div id="response"></div>
-    <form id="steg-form">
-        <label for="audio_file">Audio File:</label>
-        <input type="file" id="audio_file" name="audio_file" accept="audio/*" required>
 
-        <label for="secret_file">Secret File:</label>
-        <input type="file" id="secret_file" name="secret_file" accept="*/*" required>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const responseDiv = document.getElementById("response");
 
-        <label for="key">Encryption Key:</label>
-        <input type="password" id="key" name="key" required>
+            // Handle Hide Data
+            document.getElementById("hide-form").addEventListener("submit", async function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
 
-        <label for="date">Date:</label>
-        <input type="date" id="date" name="date" required>
+                try {
+                    const response = await fetch("/hide", {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await response.json();
+                    displayMessage(data);
+                } catch (error) {
+                    displayMessage({ success: false, message: "An error occurred: " + error.message });
+                }
+            });
 
-        <button type="submit" formaction="/hide">Hide Data</button>
-    </form>
+            // Handle Encrypt Data
+            document.getElementById("encrypt-form").addEventListener("submit", async function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
 
-    <button id="download-stego" style="display:none;">Download Stego File</button>
-    <button id="extract-data" style="display:none;">Extract Data</button>
-    <div id="extracted-data" style="display:none;"></div>
+                try {
+                    const response = await fetch("/encrypt", {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await response.json();
+                    displayMessage(data);
+                } catch (error) {
+                    displayMessage({ success: false, message: "An error occurred: " + error.message });
+                }
+            });
+
+            // Handle Decrypt Data
+            document.getElementById("decrypt-form").addEventListener("submit", async function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+
+                try {
+                    const response = await fetch("/decrypt", {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await response.json();
+                    displayMessage(data);
+                } catch (error) {
+                    displayMessage({ success: false, message: "An error occurred: " + error.message });
+                }
+            });
+
+            // Function to display response messages
+            function displayMessage(data) {
+                responseDiv.textContent = data.success ? `${data.message} File saved at: ${data.path}` : data.message;
+                responseDiv.style.color = data.success ? "green" : "red";
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,79 +1,146 @@
-from flask import Flask, request, jsonify, send_file
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+from flask import Flask, request, render_template, jsonify, send_file
+from werkzeug.utils import secure_filename
 import os
-import base64
-import io
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+import wave
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads/'
+app.secret_key = 'supersecretkey'
 
-# ... (existing encrypt_data and hide_data_in_audio functions)
+# Ensure the upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# Helper function to handle file saving
+def save_file(file, subfolder):
+    filename = secure_filename(file.filename)
+    path = os.path.join(app.config['UPLOAD_FOLDER'], subfolder)
+    os.makedirs(path, exist_ok=True)
+    file_path = os.path.join(path, filename)
+    file.save(file_path)
+    return file_path
+
+# Load an audio file for LSB manipulation
+def load_audio(file_path):
+    return wave.open(file_path, 'rb')
+
+# Function to hide data in an audio file using LSB steganography
+def hide_data(audio, data):
+    data_bin = ''.join(format(byte, '08b') for byte in data)
+    frame_bytes = bytearray(list(audio.readframes(audio.getnframes())))
+
+    # Modify LSBs to hide the data
+    for i in range(len(data_bin)):
+        frame_bytes[i] = (frame_bytes[i] & 254) | int(data_bin[i])
+
+    # Save the modified audio
+    modified_audio_path = os.path.join(app.config['UPLOAD_FOLDER'], 'stego_audio.wav')
+    modified_audio = wave.open(modified_audio_path, 'wb')
+    modified_audio.setparams(audio.getparams())
+    modified_audio.writeframes(bytes(frame_bytes))
+    audio.close()
+    modified_audio.close()
+
+    return modified_audio_path
+
+# Function to encrypt a file using AES-256
+def encrypt_file(file_path, key):
+    iv = get_random_bytes(16)  # 16 bytes for AES-256 CBC
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+
+    with open(file_path, 'rb') as f:
+        data = f.read()
+
+    # Padding to make data a multiple of 16
+    padding_length = 16 - len(data) % 16
+    data += bytes([padding_length]) * padding_length
+
+    ciphertext = cipher.encrypt(data)
+    encrypted_file_path = f"{file_path}.enc"
+
+    with open(encrypted_file_path, 'wb') as f:
+        f.write(iv + ciphertext)
+
+    return encrypted_file_path
+
+# Function to decrypt a file using AES-256
+def decrypt_file(file_path, key):
+    with open(file_path, 'rb') as f:
+        iv = f.read(16)
+        ciphertext = f.read()
+
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    decrypted_data = cipher.decrypt(ciphertext)
+
+    # Remove padding
+    padding_length = decrypted_data[-1]
+    decrypted_data = decrypted_data[:-padding_length]
+
+    decrypted_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'decrypted_audio.wav')
+    with open(decrypted_file_path, 'wb') as f:
+        f.write(decrypted_data)
+
+    return decrypted_file_path
+
+# Route to handle hiding data in an audio file
 @app.route('/hide', methods=['POST'])
-def hide_data():
+def hide():
     audio_file = request.files['audio_file']
     secret_file = request.files['secret_file']
-    key = request.form['key']
-    date = request.form['date']
 
-    try:
-        # Encrypt the secret file data
-        iv, encrypted_data = encrypt_data(secret_file, key)
+    # Save files
+    audio_path = save_file(audio_file, 'audio')
+    secret_path = save_file(secret_file, 'secret')
 
-        # Hide the encrypted data in the audio file
-        stego_audio_path = 'uploads/stego_audio.wav'  # Save path for the stego audio
-        hide_data_in_audio(audio_file, encrypted_data)
+    # Read secret data
+    with open(secret_path, 'rb') as f:
+        secret_data = f.read()
 
-        return jsonify(success=True, message='Data hidden successfully', path=stego_audio_path)
-    except Exception as e:
-        return jsonify(success=False, message=str(e)), 400
+    # Load audio and hide data
+    audio = load_audio(audio_path)
+    stego_audio_path = hide_data(audio, secret_data)
 
+    return jsonify(success=True, message="Data hidden successfully.", path=stego_audio_path)
+
+# Route to handle encryption of the stego audio file
+@app.route('/encrypt', methods=['POST'])
+def encrypt():
+    stego_audio_path = request.form['stego_audio_path']
+    key = request.form['key'].encode('utf-8')
+    
+    # Ensure the key length is 32 bytes for AES-256
+    if len(key) != 32:
+        return jsonify(success=False, message="Key must be 32 bytes (256 bits) long.")
+
+    encrypted_file_path = encrypt_file(stego_audio_path, key)
+
+    return jsonify(success=True, message="File encrypted successfully.", path=encrypted_file_path)
+
+# Route to handle decryption of an encrypted file
+@app.route('/decrypt', methods=['POST'])
+def decrypt():
+    encrypted_file = request.files['encrypted_file']
+    key = request.form['key'].encode('utf-8')
+    
+    # Save encrypted file
+    encrypted_file_path = save_file(encrypted_file, 'encrypted')
+
+    if len(key) != 32:
+        return jsonify(success=False, message="Key must be 32 bytes (256 bits) long.")
+
+    decrypted_file_path = decrypt_file(encrypted_file_path, key)
+
+    return jsonify(success=True, message="File decrypted successfully.", path=decrypted_file_path)
+
+# Route to serve files for download
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
-    return send_file(filename, as_attachment=True)
+    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename), as_attachment=True)
 
-@app.route('/extract', methods=['POST'])
-def extract_data():
-    audio_file = request.files['audio_file']
-    key = request.form['key']
-
-    try:
-        # Extract the hidden data from the audio file
-        extracted_data = extract_hidden_data(audio_file)
-        
-        # Decrypt the extracted data
-        iv, encrypted_data = extracted_data
-        decrypted_data = decrypt_data(encrypted_data, key)
-
-        return jsonify(success=True, message='Data extracted successfully', data=decrypted_data)
-    except Exception as e:
-        return jsonify(success=False, message=str(e)), 400
-
-def extract_hidden_data(audio_file):
-    audio = open(audio_file, 'rb')
-    audio_bytes = bytearray(audio.read())
-    
-    # Read the bits from the audio bytes
-    extracted_bits = ''
-    for byte in audio_bytes:
-        extracted_bits += str(byte & 1)  # Get the least significant bit
-
-    # Convert bits back to bytes
-    byte_array = bytearray()
-    for i in range(0, len(extracted_bits), 8):
-        byte_array.append(int(extracted_bits[i:i + 8], 2))
-
-    # The first 16 bytes is the IV
-    iv = byte_array[:16]
-    encrypted_data = byte_array[16:]  # The rest is the encrypted data
-    
-    return base64.b64encode(iv).decode('utf-8'), base64.b64encode(encrypted_data).decode('utf-8')
-
-def decrypt_data(encrypted_data, key):
-    key = key.ljust(32)[:32].encode('utf-8')  # Adjust the key length
-    cipher = AES.new(key, AES.MODE_CBC, iv=base64.b64decode(encrypted_data[0]))  # Use the extracted IV
-    decrypted_data = unpad(cipher.decrypt(base64.b64decode(encrypted_data[1])), AES.block_size)
-    return decrypted_data
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 if __name__ == "__main__":
     app.run(debug=True)
