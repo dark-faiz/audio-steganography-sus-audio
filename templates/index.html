@@ -3,118 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cryptography Tool</title>
+    <title>Hide Audio</title>
     <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
-    <h1>Cryptography Tool</h1>
+   <h1>Hide Audio</h1>
 
-    <!-- Hide Data Section -->
-    <section>
-        <h2>Hide Data</h2>
-        <form id="hide-form" enctype="multipart/form-data">
-            <label for="audio-file">Choose audio file:</label>
-            <input type="file" id="audio-file" name="audio_file" required>
+   <!-- Hide Data Section -->
+   <section class="box">
+       <h2>Hide Data</h2>
+       <form id="hide-form" enctype="multipart/form-data">
+           <label for="audio-file">Choose audio file:</label>
+           <input type="file" id="audio-file" name="audio_file" required>
 
-            <label for="secret-file">Choose secret file to hide:</label>
-            <input type="file" id="secret-file" name="secret_file" required>
+           <label for="secret-file">Choose secret file to hide:</label>
+           <input type="file" id="secret-file" name="secret_file" required>
 
-            <button type="submit">Hide Data</button>
-        </form>
-    </section>
+           <button type="submit">Hide Data</button>
+       </form>
+   </section>
 
-    <!-- Encrypt Section -->
-    <section>
-        <h2>Encrypt Stego Audio</h2>
-        <form id="encrypt-form">
-            <label for="stego-audio-path">Stego Audio Path:</label>
-            <input type="text" id="stego-audio-path" name="stego_audio_path" placeholder="Enter path of stego audio" required>
+   <!-- Encrypt Section -->
+   <section class="box">
+       <h2>Encrypt Stego Audio</h2>
+       <form id="encrypt-form">
+           <label for="stego-audio-path">Stego Audio Path:</label>
+           <input type="text" id="stego-audio-path" name="stego_audio_path" placeholder="Enter path of stego audio" required>
 
-            <label for="encryption-key">Encryption Key:</label>
-            <input type="password" id="encryption-key" name="key" placeholder="Enter your 32-character encryption key" required>
+           <label for="encryption-key">Encryption Key:</label>
+           <input type="password" id="encryption-key" name="key" placeholder="Enter your 32-character encryption key" required>
 
-            <button type="submit">Encrypt</button>
-        </form>
-    </section>
+           <button type="submit">Encrypt</button>
+       </form>
+   </section>
 
-    <!-- Decrypt Section -->
-    <section>
-        <h2>Decrypt Encrypted Audio</h2>
-        <form id="decrypt-form" enctype="multipart/form-data">
-            <label for="encrypted-file">Choose encrypted file:</label>
-            <input type="file" id="encrypted-file" name="encrypted_file" required>
+   <!-- Decrypt Section -->
+   <section class="box">
+       <h2>Decrypt Encrypted Audio</h2>
+       <form id="decrypt-form" enctype="multipart/form-data">
+           <label for="encrypted-file">Choose encrypted file:</label>
+           <input type="file" id="encrypted-file" name="encrypted_file" required>
 
-            <label for="decryption-key">Decryption Key:</label>
-            <input type="password" id="decryption-key" name="key" placeholder="Enter your decryption key" required>
+           <label for="decryption-key">Decryption Key:</label>
+           <input type="password" id="decryption-key" name="key" placeholder="Enter your decryption key" required>
 
-            <button type="submit">Decrypt</button>
-        </form>
-    </section>
+           <button type="submit">Decrypt</button>
+       </form>
+   </section>
 
-    <!-- Response Message -->
-    <div id="response"></div>
+   <!-- Response Message -->
+   <div id="response"></div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const responseDiv = document.getElementById("response");
+   <script>
+       document.addEventListener("DOMContentLoaded", function() {
+           const responseDiv = document.getElementById("response");
 
-            // Handle Hide Data
-            document.getElementById("hide-form").addEventListener("submit", async function(event) {
-                event.preventDefault();
-                const formData = new FormData(this);
+           // Handle Hide Data
+           document.getElementById("hide-form").addEventListener("submit", async function(event) {
+               event.preventDefault();
+               const formData = new FormData(this);
 
-                try {
-                    const response = await fetch("/hide", {
-                        method: "POST",
-                        body: formData
-                    });
-                    const data = await response.json();
-                    displayMessage(data);
-                } catch (error) {
-                    displayMessage({ success: false, message: "An error occurred: " + error.message });
-                }
-            });
+               try {
+                   const response = await fetch("/hide", {
+                       method: "POST",
+                       body: formData
+                   });
+                   const data = await response.json();
+                   displayMessage(data);
+               } catch (error) {
+                   displayMessage({ success: false, message: "An error occurred: " + error.message });
+               }
+           });
 
-            // Handle Encrypt Data
-            document.getElementById("encrypt-form").addEventListener("submit", async function(event) {
-                event.preventDefault();
-                const formData = new FormData(this);
+           // Handle Encrypt Data
+           document.getElementById("encrypt-form").addEventListener("submit", async function(event) {
+               event.preventDefault();
+               const formData = new FormData(this);
 
-                try {
-                    const response = await fetch("/encrypt", {
-                        method: "POST",
-                        body: formData
-                    });
-                    const data = await response.json();
-                    displayMessage(data);
-                } catch (error) {
-                    displayMessage({ success: false, message: "An error occurred: " + error.message });
-                }
-            });
+               try {
+                   const response = await fetch("/encrypt", {
+                       method: "POST",
+                       body: formData
+                   });
+                   const data = await response.json();
+                   displayMessage(data);
+               } catch (error) {
+                   displayMessage({ success: false, message: "An error occurred: " + error.message });
+               }
+           });
 
-            // Handle Decrypt Data
-            document.getElementById("decrypt-form").addEventListener("submit", async function(event) {
-                event.preventDefault();
-                const formData = new FormData(this);
+           // Handle Decrypt Data
+           document.getElementById("decrypt-form").addEventListener("submit", async function(event) {
+               event.preventDefault();
+               const formData = new FormData(this);
 
-                try {
-                    const response = await fetch("/decrypt", {
-                        method: "POST",
-                        body: formData
-                    });
-                    const data = await response.json();
-                    displayMessage(data);
-                } catch (error) {
-                    displayMessage({ success: false, message: "An error occurred: " + error.message });
-                }
-            });
+               try {
+                   const response = await fetch("/decrypt", {
+                       method: "POST",
+                       body: formData
+                   });
+                   const data = await response.json();
+                   displayMessage(data);
+               } catch (error) {
+                   displayMessage({ success: false, message: "An error occurred: " + error.message });
+               }
+           });
 
-            // Function to display response messages
-            function displayMessage(data) {
-                responseDiv.textContent = data.success ? `${data.message} File saved at: ${data.path}` : data.message;
-                responseDiv.style.color = data.success ? "green" : "red";
-            }
-        });
-    </script>
+           // Function to display response messages
+           function displayMessage(data) {
+               if (data.success) {
+                   responseDiv.innerHTML = `${data.message} File saved at: ${data.path} 
+                                             <br><a href="/download/${data.path.split('/').pop()}" target="_blank">Download File</a>`;
+                   responseDiv.style.color = "green";
+               } else {
+                   responseDiv.textContent = data.message;
+                   responseDiv.style.color = "red";
+               }
+           }
+       });
+   </script>
 </body>
 </html>

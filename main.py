@@ -52,13 +52,14 @@ def encrypt_file(file_path, key):
     with open(file_path, 'rb') as f:
         data = f.read()
 
-    # Padding to make data a multiple of 16
-    padding_length = 16 - len(data) % 16
-    data += bytes([padding_length]) * padding_length
+        # Padding to make data a multiple of 16
+        padding_length = 16 - len(data) % 16
+        data += bytes([padding_length]) * padding_length
 
-    ciphertext = cipher.encrypt(data)
+        ciphertext = cipher.encrypt(data)
+
     encrypted_file_path = f"{file_path}.enc"
-
+    
     with open(encrypted_file_path, 'wb') as f:
         f.write(iv + ciphertext)
 
@@ -78,6 +79,7 @@ def decrypt_file(file_path, key):
     decrypted_data = decrypted_data[:-padding_length]
 
     decrypted_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'decrypted_audio.wav')
+    
     with open(decrypted_file_path, 'wb') as f:
         f.write(decrypted_data)
 
@@ -108,13 +110,13 @@ def hide():
 def encrypt():
     stego_audio_path = request.form['stego_audio_path']
     key = request.form['key'].encode('utf-8')
-    
+
     # Ensure the key length is 32 bytes for AES-256
     if len(key) != 32:
         return jsonify(success=False, message="Key must be 32 bytes (256 bits) long.")
 
     encrypted_file_path = encrypt_file(stego_audio_path, key)
-
+    
     return jsonify(success=True, message="File encrypted successfully.", path=encrypted_file_path)
 
 # Route to handle decryption of an encrypted file
@@ -122,7 +124,7 @@ def encrypt():
 def decrypt():
     encrypted_file = request.files['encrypted_file']
     key = request.form['key'].encode('utf-8')
-    
+
     # Save encrypted file
     encrypted_file_path = save_file(encrypted_file, 'encrypted')
 
@@ -130,17 +132,17 @@ def decrypt():
         return jsonify(success=False, message="Key must be 32 bytes (256 bits) long.")
 
     decrypted_file_path = decrypt_file(encrypted_file_path, key)
-
+    
     return jsonify(success=True, message="File decrypted successfully.", path=decrypted_file_path)
 
 # Route to serve files for download
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
-    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename), as_attachment=True)
+   return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename), as_attachment=True)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+   return render_template('index.html')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+   app.run(debug=True)
